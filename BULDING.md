@@ -114,3 +114,10 @@ In the **backend** shell (`shells.ghc`) build the server, put it in the staging 
 ```shell
 [nix-shell: ...]$ make runDevServer
 ```
+
+## Troubleshooting
+
+If `<nixpkgs>` is missing try:
+```shell
+nix-channel --update
+```

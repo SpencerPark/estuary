@@ -1,9 +1,9 @@
 { 
-nixpkgs ? import <nixpkgs> {},
+pkgs ? import <nixpkgs> {},
 spec,
 extra ? {}
 }:
-  nixpkgs.pkgs.fetchFromGitHub (
+  pkgs.fetchFromGitHub (
     let json = builtins.fromJSON (builtins.readFile spec);
     in { 
       inherit (json) owner repo rev sha256;
