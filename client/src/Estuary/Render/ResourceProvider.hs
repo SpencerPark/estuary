@@ -59,19 +59,18 @@ getResource dataProvider resources groupName number =
       case lookupCache cache groupName (resourceFileName resource) of
         Just (Left error) -> return Nothing
         Just (Right cached) -> return $ Just cached
-        Nothing -> do
-          dataResponse <- liftIO $ fetchResource dataProvider resource
-          case dataResponse of
-            Left error -> do
-              put $ cacheResult groupName (resourceFileName resource) (Left error) cache
-              return Nothing
-            Right blob -> do
-              (decodeResponse :: Either Text v) <- liftIO $ decodeResource blob 
-              case decodeResponse of
-                Left error -> do
-                  put $ cacheResult groupName (resourceFileName resource) (Left error) cache
-                  return Nothing
-                Right value -> do
-                  put $ cacheResult groupName (resourceFileName resource) (Right value) cache
-                  return $ Just value
+        Nothing -> loadResource dataProvider resource
 
+loadResource :: (ResourceDataProvider p, Decodable v) => p m -> Resource m -> CachingResourceRequest v (Maybe v)
+loadResource dataProvider resource = do
+  dataResponse <- liftIO $ fetchResource dataProvider resource
+  case dataResponse of
+    Left error -> do
+      putCache (Left error) $> Nothing
+    Right blob -> do
+      (decodeResponse :: Either Text v) <- liftIO $ decodeResource blob 
+      case decodeResponse of
+        Left error -> putCache (Left error) $> Nothing
+        Right value -> putCache (Right value) $> Just value
+  where putCache :: Either Text v -> CachingResourceRequest v ()
+        putCache = modify . cacheResult (resourceGroup resource) (resourceFileName resource)

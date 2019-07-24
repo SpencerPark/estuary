@@ -42,7 +42,7 @@ data Context = Context {
   theme :: Text,
   ensembleState :: EnsembleState,
   samples :: SampleMap,
-  localResourceServers :: LocalResourceServers,
+  localResourceServers :: LocalResourceServers, -- ^ The user upload, private, resource **data**.
   privateResources :: Resources, -- ^ The user uploaded, browser local, resource set.
   resources :: Resources, -- ^ The effective resource set.
   webDirtOn :: Bool,
