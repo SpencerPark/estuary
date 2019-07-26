@@ -69,18 +69,19 @@ resourceUploader = do
   dynE $
     ffor dynSelected $ \selectedFiles -> do
       (resourceLoadedEvs :: [Event t ContextChange]) <- forM selectedFiles $ \(group, file) -> do
-        (resourceLoadedEv :: Event t (Resource AudioMeta)) <- performEventAsync $ liftIO . pickAudioResource file <$ uploadClickedEv
+        (resourceLoadedEv :: Event t (Resource AudioMeta)) <- performEventAsync $ liftIO . pickAudioResource group file <$ uploadClickedEv
         return $ resourceLoadedEv <&> addPrivateAudioResource group (toBlob file)
           
       return $ mergeWith (.) resourceLoadedEvs
 
 
-pickAudioResource :: File -> (Resource AudioMeta -> IO ()) -> IO ()
-pickAudioResource f done = do
+pickAudioResource :: Text -> File -> (Resource AudioMeta -> IO ()) -> IO ()
+pickAudioResource group f done = do
   withAudioMeta f $ \meta -> do
     name <- getName f
     size <- getSize f
     done $ Resource {
+      resourceGroup = group,
       resourceFileName = name,
       resourceFileSize = toInteger size,
       resourceMeta = meta,

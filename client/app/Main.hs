@@ -18,13 +18,16 @@ import Estuary.WebDirt.SuperDirt
 import Estuary.Protocol.Peer
 import Estuary.Types.Context
 import Estuary.Types.CanvasState
+import Estuary.Types.Resources
 import Estuary.Widgets.Estuary
 import Estuary.Widgets.Navigation(Navigation(..))
+import Estuary.WebDirt.SampleBank
 import Estuary.WebDirt.SampleEngine
 import Estuary.RenderInfo
 import Estuary.RenderState
 import Estuary.Renderer
 import Estuary.Render.DynamicsMode
+import Estuary.Render.LocalResources
 
 import GHC.Conc.Sync(setUncaughtExceptionHandler, getUncaughtExceptionHandler)
 
@@ -52,8 +55,10 @@ main = do
   ac <- getGlobalAudioContext
   addWorklets ac
 
+  (audioResourcesVar, audioProviderVar, sampleBank) <- makeSampleBank ac emptyResourceMap emptyLocalResourceServer
+
   mainBusNodes@(mainBusIn,_,_,_) <- initializeMainBus
-  wd <- liftAudioIO $ newWebDirt mainBusIn
+  wd <- liftAudioIO $ newWebDirt sampleBank mainBusIn
   initializeWebAudio wd
   sd <- newSuperDirt
   mv <- emptyCanvasState >>= newMVar
@@ -72,7 +77,7 @@ main = do
     return $ pToJSVal node
   js_registerSetEstuaryAudioDestination cb
 
-  mainWidgetInElementById "estuary-root" $ estuaryWidget c ri
+  mainWidgetInElementById "estuary-root" $ estuaryWidget c ri audioResourcesVar audioProviderVar
 
   -- Signal the splash page that estuary is loaded.
   js_setIconStateLoaded

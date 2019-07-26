@@ -1,5 +1,7 @@
 module Estuary.Types.Resources where
 
+import Data.Foldable as F
+
 import Data.Text
 
 import Data.Map.Strict (Map)
@@ -51,6 +53,12 @@ resolveResource (ResourceMap resources) groupName number = do
   group <- Map.lookup groupName resources
   let idx = mod number (Seq.length group) in
     Seq.lookup idx group
+
+listResourceGroup :: ResourceMap m -> Text -> [Resource m]
+listResourceGroup (ResourceMap resources) groupName = 
+  case Map.lookup groupName resources of
+    Nothing -> []
+    Just group -> F.toList group
 
 data Resource m = Resource {
   resourceGroup :: Text,

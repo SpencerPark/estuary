@@ -52,6 +52,7 @@ dependencies:
   - parsec
   - parsec-numbers
   - reflex-dom-contrib
+  - stm
   - mtl
   - mwc-random
   - haskell-src-exts

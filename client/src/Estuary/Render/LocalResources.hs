@@ -41,14 +41,14 @@ uploadLocal groupName url file (LocalResourceServer server) =
   in LocalResourceServer (Map.insert groupName group server)
 
 instance ResourceDataProvider LocalResourceServer where
-  resourceIsProvidedBy (LocalResourceServer fs) Resource{resourceScope=Private, resourceGroup, resourceFileName} = 
-    isJust $ do
-        group <- Map.lookup resourceGroup fs
-        Map.lookup resourceFileName group
-  resourceIsProvidedBy _ _ = False
-
   fetchResource server@(LocalResourceServer fs) resource@Resource{resourceGroup, resourceFileName} =
     if resourceIsProvidedBy server resource then 
       return $ Right $ (fs ! resourceGroup) ! resourceFileName
     else
       return $ Left $ "No resource in " `T.append` resourceGroup `T.append` " named " `T.append` resourceFileName
+
+resourceIsProvidedBy (LocalResourceServer fs) Resource{resourceScope=Private, resourceGroup, resourceFileName} = 
+  isJust $ do
+      group <- Map.lookup resourceGroup fs
+      Map.lookup resourceFileName group
+resourceIsProvidedBy _ _ = False

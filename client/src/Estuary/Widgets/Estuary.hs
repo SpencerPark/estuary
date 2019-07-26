@@ -9,6 +9,7 @@ import Reflex.Dom hiding (Request,Response)
 import Text.JSON
 import Data.Time
 import Data.Map
+import Data.Functor
 import Text.Read
 import Control.Monad.IO.Class (liftIO)
 import Control.Concurrent.MVar
@@ -38,19 +39,28 @@ import Estuary.Render.DynamicsMode
 import Estuary.Widgets.Header
 import Estuary.Widgets.Footer
 import Estuary.Types.EnsembleState
+import Estuary.Types.Resources
+import Estuary.Render.ResourceProvider
+import Estuary.Render.LocalResources
 
-estuaryWidget :: MonadWidget t m => MVar Context -> MVar RenderInfo -> m ()
-estuaryWidget ctxM riM = divClass "estuary" $ mdo
+estuaryWidget :: (MonadWidget t m) => MVar Context -> MVar RenderInfo -> MVar (ResourceMap AudioMeta) -> MVar (LocalResourceServer AudioMeta) -> m ()
+estuaryWidget ctxVar riVar audioResourcesVar audioProviderVar = divClass "estuary" $ mdo
 
   --
-  iCtx <- liftIO $ readMVar ctxM
+  iCtx <- liftIO $ readMVar ctxVar
   ctx <- foldDyn ($) iCtx contextChanges -- dynamic context; is first here so available for everything else
   let ensembleStateDyn = fmap ensembleState ctx
-  canvasWidget ctxM -- global canvas shared with render threads through MVar
-  performContext ctxM ctx -- perform all IO actions consequent to Context changing
-  renderInfo <- pollRenderInfo riM -- dynamic render info (written by render threads, read by widgets)
+  canvasWidget ctxVar -- global canvas shared with render threads through MVar
+  performContext ctxVar ctx -- perform all IO actions consequent to Context changing
+  renderInfo <- pollRenderInfo riVar -- dynamic render info (written by render threads, read by widgets)
   samplesLoadedEv <- loadSampleMap
   (deltasDown,wsCtxChanges) <- alternateWebSocket ctx renderInfo requestsUp
+
+  -- syncing ctx into audio resource variables
+  performEvent_ $ (updated (fmap (audioResources . privateResources) ctx)) <&> \resources -> liftIO $ do
+    void $ swapMVar audioResourcesVar resources
+  performEvent_ $ (updated (fmap (localAudioResources . localResourceServers) ctx)) <&> \server -> liftIO $ do
+    void $ swapMVar audioProviderVar server
 
   -- responses down from server
   let ensembleResponses = fmap justEnsembleResponses deltasDown
